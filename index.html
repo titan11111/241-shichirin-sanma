@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#121829">
+<meta name="description" content="屋台の焼き場のゲンと60秒で焼き加減勝負。うちわで火力を操り、両面をベストに焼き上げる3D対戦ゲーム。">
+<title>七輪サンマ焼きバトル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#121829; --panel:rgba(243,234,216,.92); --panelInk:#1c1a17;
+  --indigo:#26386a; --lantern:#c8332b; --ember:#ffa23a; --paper:#f3ead8; --ink:#1c1a17; --wood:#6b4a2b;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --panel:rgba(30,40,72,.9); --panelInk:#f3ead8; --paper:#1e2848; --ink:#f3ead8; }
+}
+:root[data-theme="dark"]{ --panel:rgba(30,40,72,.9); --panelInk:#f3ead8; --paper:#1e2848; --ink:#f3ead8; }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden}
+body{font-family:"M PLUS Rounded 1c",system-ui,-apple-system,"Hiragino Sans",sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+canvas{position:fixed;inset:0;display:block;z-index:0}
+#hud{z-index:3;position:fixed;top:calc(8px + env(safe-area-inset-top));left:0;right:0;display:grid;grid-template-columns:1fr auto 1fr;gap:8px;padding:0 10px;pointer-events:none;align-items:start}
+.card{background:var(--panel);color:var(--panelInk);border-radius:12px;padding:7px 9px;border:2px solid transparent;transition:border-color .2s}
+.card.hot{border-color:var(--ember);animation:pulse .5s infinite alternate}
+@keyframes pulse{to{border-color:var(--lantern)}}
+@media (prefers-reduced-motion:reduce){.card.hot{animation:none}}
+.who{font-weight:800;font-size:13px;margin-bottom:2px}
+.row{margin-top:3px}
+.lbl{display:flex;justify-content:space-between;font-size:11px;line-height:1.2}
+.bar{height:9px;background:rgba(0,0,0,.28);border-radius:5px;position:relative;overflow:hidden;margin-top:2px}
+.zone{position:absolute;left:58.33%;width:16.67%;top:0;bottom:0;background:rgba(110,200,120,.55)}
+.fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:5px}
+#timer{font-family:"Dela Gothic One",sans-serif;font-size:34px;color:var(--ember);text-shadow:0 3px 0 #000;min-width:62px;text-align:center;line-height:1}
+#timer small{display:block;font-family:"M PLUS Rounded 1c";font-size:10px;color:#f3ead8;text-shadow:none;margin-top:2px}
+#cpuSay{font-size:11px;margin-top:4px;min-height:14px;opacity:.85}
+#pad{z-index:3;position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;display:flex;gap:9px;justify-content:center;padding:0 12px}
+#pad button{font:inherit;font-weight:800;border:0;border-radius:14px;padding:15px 6px;flex:1;max-width:170px;font-size:15px;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.45);touch-action:none}
+#pad button:active,#fan.on{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.45)}
+#fan{background:var(--indigo)} #flip{background:var(--wood)} #serve{background:var(--lantern)}
+button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
+button:disabled{opacity:.35}
+#center{justify-self:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+#sys{display:flex;gap:6px;pointer-events:auto}
+.icon-btn{font:inherit;font-weight:800;font-size:15px;line-height:1;width:38px;height:38px;border:0;border-radius:11px;
+  background:var(--panel);color:var(--panelInk);box-shadow:0 3px 0 rgba(0,0,0,.4);touch-action:manipulation;cursor:pointer}
+.icon-btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.4)}
+.icon-btn[aria-pressed="true"]{opacity:.5}
+#pauseDlg{border:0;border-radius:20px;background:var(--paper);color:var(--ink);padding:22px 20px;max-width:320px;width:calc(100% - 40px)}
+#pauseDlg::backdrop{background:rgba(10,12,24,.72)}
+#pauseDlg h2{font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:24px;margin:0 0 14px;color:var(--lantern);text-align:center}
+#pauseDlg .col{display:flex;flex-direction:column;gap:10px}
+#pauseDlg .col .big{margin-top:0;width:100%}
+.ov{z-index:5;position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,12,24,.66);padding:20px}
+.ov[hidden]{display:none}
+.box{background:var(--paper);color:var(--ink);border-radius:20px;padding:24px 22px;max-width:350px;width:100%;text-align:center}
+h1{font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-height:1.12;margin:0 0 10px;color:var(--lantern)}
+.box p{margin:6px 0;font-size:14px;line-height:1.6}
+.how{text-align:left;background:rgba(0,0,0,.07);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:13px;line-height:1.75}
+.big{font:inherit;font-weight:800;font-size:18px;border:0;border-radius:14px;padding:14px 26px;background:var(--lantern);color:#fff;box-shadow:0 5px 0 #7a1c17;margin-top:8px}
+.big:active{transform:translateY(4px);box-shadow:0 1px 0 #7a1c17}
+#verdict{font-family:"Dela Gothic One",sans-serif;font-size:30px;margin:0 0 8px;color:var(--lantern)}
+.scores{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.sc{background:rgba(0,0,0,.07);border-radius:12px;padding:10px 6px}
+.sc b{display:block;font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:34px;line-height:1.1}
+.sc span{font-size:12px;display:block;line-height:1.5}
+.best{font-size:13px;opacity:.8}.best b{font-size:18px}
+</style>
+</head>
+<body>
+
+<div class="ov" id="title">
+  <div class="box">
+    <h1>七輪<br>サンマ焼きバトル</h1>
+    <p>屋台の焼き場のゲンと、60秒で焼き加減勝負。</p>
+    <div class="how">
+      🔥 下を向いてる面が焼ける<br>
+      🪭 うちわ長押しで火力アップ<br>
+      🟩 両面ともゲージの緑（70〜90）がベスト<br>
+      🐟 焼けたら「焼き上がり！」で皿へ
+    </div>
+    <button class="big" id="startBtn">焼き始める</button>
+  </div>
+</div>
+
+<div id="hud">
+  <div class="card" id="pCard">
+    <div class="who">あなた</div>
+    <div class="row"><div class="lbl"><span id="pAl">A面</span><span id="pAv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="pA"></div></div></div>
+    <div class="row"><div class="lbl"><span id="pBl">B面</span><span id="pBv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="pB"></div></div></div>
+  </div>
+  <div id="center">
+    <div id="timer">60<small>秒</small></div>
+    <div id="sys">
+      <button type="button" class="icon-btn" id="btnMute" aria-label="音の切り替え" aria-pressed="false">♪</button>
+      <button type="button" class="icon-btn" id="btnPause" aria-label="一時停止">Ⅱ</button>
+    </div>
+  </div>
+  <div class="card" id="cCard">
+    <div class="who">焼き場のゲン</div>
+    <div class="row"><div class="lbl"><span id="cAl">A面</span><span id="cAv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="cA"></div></div></div>
+    <div class="row"><div class="lbl"><span id="cBl">B面</span><span id="cBv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="cB"></div></div></div>
+    <div id="cpuSay"></div>
+  </div>
+</div>
+
+<div id="pad">
+  <button id="fan" disabled>うちわ<br><small>長押し</small></button>
+  <button id="flip" disabled>ひっくり<br>返す</button>
+  <button id="serve" disabled>焼き<br>上がり！</button>
+</div>
+
+
+<div class="ov" id="result" hidden>
+  <div class="box">
+    <div id="verdict">勝ち！</div>
+    <div class="scores">
+      <div class="sc"><span>あなた</span><b id="rP">0</b><span id="rPd"></span></div>
+      <div class="sc"><span>ゲン</span><b id="rC">0</b><span id="rCd"></span></div>
+    </div>
+    <p id="rComment"></p>
+    <p class="best">自己ベスト <b id="rBest">0</b></p>
+    <button class="big" id="againBtn">もう一匹焼く</button>
+  </div>
+</div>
+
+<dialog id="pauseDlg" aria-labelledby="pauseTitle">
+  <h2 id="pauseTitle">一時停止</h2>
+  <div class="col">
+    <button type="button" class="big" id="btnResume">再開</button>
+    <button type="button" class="big" id="btnMuteDlg">音: オン</button>
+    <button type="button" class="big" id="btnQuit">タイトルへ</button>
+  </div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+
+// ---------- renderer / scene ----------
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
+// 影を落とすライトが1つも無いためシャドウパスは常に空。有効のままだと状態切替の分だけ損をする
+renderer.shadowMap.enabled=false;
+document.body.appendChild(renderer.domElement); // DOM先頭はタイトルの開始ボタンに譲る（z-index:0で背面）
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x121829);
+scene.fog=new THREE.Fog(0x121829,9,24);
+const camera=new THREE.PerspectiveCamera(42,1,0.1,80);
+
+scene.add(new THREE.HemisphereLight(0x6a7bb0,0x2a1a10,.55));
+const moon=new THREE.DirectionalLight(0xa8b8ff,.35); moon.position.set(-4,8,3); scene.add(moon);
+
+const table=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.MeshStandardMaterial({color:0x3a2a1e,roughness:.92}));
+table.rotation.x=-Math.PI/2; table.receiveShadow=true; scene.add(table);
+
+// 提灯
+const lanternMat=new THREE.MeshStandardMaterial({color:0xc8332b,emissive:0xc8332b,emissiveIntensity:.9,roughness:.6});
+for(let i=0;i<6;i++){
+  const l=new THREE.Mesh(new THREE.SphereGeometry(.45,20,14),lanternMat);
+  l.scale.y=1.3; l.position.set(-7.5+i*3,2.6+Math.sin(i*1.7)*.3,-7); scene.add(l);
+}
+
+// ---------- helpers ----------
+const STOPS=[[0,0xa9bccb],[40,0xd8cbb0],[65,0xd49a4a],[85,0x9a5a22],[102,0x4a2810],[125,0x120d0a]].map(([d,c])=>[d,new THREE.Color(c)]);
+function dColor(d,out){
+  d=Math.max(0,Math.min(125,d));
+  for(let i=1;i<STOPS.length;i++){ if(d<=STOPS[i][0]){ const t=(d-STOPS[i-1][0])/(STOPS[i][0]-STOPS[i-1][0]); return out.copy(STOPS[i-1][1]).lerp(STOPS[i][1],t);} }
+  return out.copy(STOPS[STOPS.length-1][1]);
+}
+const tmpC=new THREE.Color();
+function radialTex(inner,outer){
+  const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d');
+  const g=x.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,inner); g.addColorStop(1,outer);
+  x.fillStyle=g; x.fillRect(0,0,64,64); return new THREE.CanvasTexture(c);
+}
+
+// ---------- 七輪 ----------
+function makeShichirin(){
+  const g=new THREE.Group();
+  const clay=new THREE.MeshStandardMaterial({color:0xcfae7f,roughness:.95});
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(.8,.66,.9,36),clay);
+  body.position.y=.45; body.castShadow=true; g.add(body);
+  const metal=new THREE.MeshStandardMaterial({color:0x3b3b3b,metalness:.7,roughness:.45});
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.8,.035,8,40),metal); rim.rotation.x=Math.PI/2; rim.position.y=.9; g.add(rim);
+  const band=new THREE.Mesh(new THREE.TorusGeometry(.74,.025,8,40),metal); band.rotation.x=Math.PI/2; band.position.y=.55; g.add(band);
+  const cap=new THREE.Mesh(new THREE.CircleGeometry(.7,32),new THREE.MeshStandardMaterial({color:0x0d0806,roughness:1}));
+  cap.rotation.x=-Math.PI/2; cap.position.y=.903; g.add(cap);
+  const windowMat=new THREE.MeshStandardMaterial({color:0x1a0f08,emissive:0xff5a1a,emissiveIntensity:.5});
+  const win=new THREE.Mesh(new THREE.BoxGeometry(.34,.22,.06),windowMat); win.position.set(0,.26,.7); win.rotation.x=-.14; g.add(win);
+  const coalMats=[0,1].map(()=>new THREE.MeshStandardMaterial({color:0x2a1a10,emissive:0xff4a00,emissiveIntensity:.8,roughness:.9}));
+  for(let i=0;i<18;i++){
+    const r=Math.sqrt(Math.random())*.56, a=Math.random()*Math.PI*2;
+    const c=new THREE.Mesh(new THREE.IcosahedronGeometry(.1,0),coalMats[i%2]);
+    c.position.set(Math.cos(a)*r,.94+Math.random()*.03,Math.sin(a)*r);
+    c.rotation.set(Math.random()*3,Math.random()*3,0); c.scale.setScalar(.7+Math.random()*.6); g.add(c);
+  }
+  const wire=new THREE.MeshStandardMaterial({color:0x8a8a8a,metalness:.8,roughness:.35});
+  for(let i=-5;i<=5;i++){
+    const o=i*.125, len=2*Math.sqrt(Math.max(0,.76*.76-o*o));
+    const w1=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,len,5),wire); w1.rotation.z=Math.PI/2; w1.position.set(0,1.0,o); g.add(w1);
+    const w2=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,len,5),wire); w2.rotation.x=Math.PI/2; w2.position.set(o,1.0,0); g.add(w2);
+  }
+  const light=new THREE.PointLight(0xff7a2a,1.2,3.5,2); light.position.y=1.3; g.add(light);
+  scene.add(g);
+  return {g,coalMats,windowMat,light};
+}
+
+// ---------- サンマ ----------
+function taper(geo){
+  const p=geo.attributes.position;
+  for(let i=0;i<p.count;i++){ const x=p.getX(i); const k=x<0?1+x*.6:1-x*x*.55; p.setY(i,p.getY(i)*k); p.setZ(i,p.getZ(i)*k); }
+  geo.computeVertexNormals();
+}
+function makeFish(parent,yaw){
+  const holder=new THREE.Group(); holder.rotation.y=yaw; holder.position.y=1.08; parent.add(holder);
+  const flip=new THREE.Group(); holder.add(flip);
+  const base={color:0x8ea6bd,roughness:.3,metalness:.45};
+  const mA=new THREE.MeshStandardMaterial(base), mB=new THREE.MeshStandardMaterial(base);
+  const gA=new THREE.SphereGeometry(1,40,16,0,Math.PI*2,0,Math.PI/2); taper(gA);
+  const gB=new THREE.SphereGeometry(1,40,16,0,Math.PI*2,Math.PI/2,Math.PI/2); taper(gB);
+  const body=new THREE.Group(); body.scale.set(.86,.07,.1);
+  const top=new THREE.Mesh(gA,mA), bot=new THREE.Mesh(gB,mB); top.castShadow=bot.castShadow=true;
+  body.add(top,bot); flip.add(body);
+  const s=new THREE.Shape(); s.moveTo(0,0); s.lineTo(-.2,.1); s.quadraticCurveTo(-.1,0,-.2,-.1); s.lineTo(0,0);
+  const tg=new THREE.ShapeGeometry(s); tg.rotateX(-Math.PI/2);
+  const tailMat=new THREE.MeshStandardMaterial({color:0x8fa2b3,side:THREE.DoubleSide,roughness:.5});
+  const tail=new THREE.Mesh(tg,tailMat); tail.position.x=-.8; flip.add(tail);
+  const lineMat=new THREE.MeshStandardMaterial({color:0x56606c,roughness:.6,transparent:true,opacity:.8});
+  for(const sy of [1,-1]){ const ln=new THREE.Mesh(new THREE.BoxGeometry(1.1,.006,.01),lineMat); ln.position.set(-.05,sy*.066,0); flip.add(ln); }
+  const eyeA=new THREE.MeshStandardMaterial({color:0x111111,roughness:.2}), eyeB=eyeA.clone();
+  const eA=new THREE.Mesh(new THREE.SphereGeometry(.028,12,10),eyeA); eA.position.set(.64,.036,.02); flip.add(eA);
+  const eB=new THREE.Mesh(new THREE.SphereGeometry(.028,12,10),eyeB); eB.position.set(.64,-.036,.02); flip.add(eB);
+  return {holder,flip,mA,mB,tailMat,eyeA,eyeB,lineMat};
+}
+
+// ---------- うちわ ----------
+function uchiwaTex(){
+  const c=document.createElement('canvas'); c.width=c.height=256; const x=c.getContext('2d');
+  x.fillStyle='#f3ead8'; x.fillRect(0,0,256,256);
+  x.strokeStyle='rgba(120,90,50,.28)'; x.lineWidth=2;
+  for(let a=-80;a<=80;a+=10){ const r=a*Math.PI/180; x.beginPath(); x.moveTo(128,256); x.lineTo(128+Math.sin(r)*300,256-Math.cos(r)*300); x.stroke(); }
+  x.fillStyle='#c8332b'; x.beginPath(); x.arc(128,105,54,0,Math.PI*2); x.fill();
+  x.strokeStyle='#26386a'; x.lineWidth=10;
+  for(let i=0;i<3;i++){ x.beginPath(); for(let px=0;px<=256;px+=8){ const py=185+i*20+Math.sin(px/20+i)*7; px?x.lineTo(px,py):x.moveTo(px,py);} x.stroke(); }
+  return new THREE.CanvasTexture(c);
+}
+const uTex=uchiwaTex();
+function makeUchiwa(parent,side){
+  const pivot=new THREE.Group(); pivot.position.set(side*.98,.15,.95); pivot.rotation.y=Math.atan2(-side,-1); parent.add(pivot);
+  const arm=new THREE.Group(); pivot.add(arm);
+  const bamboo=new THREE.MeshStandardMaterial({color:0xc9a86a,roughness:.7});
+  const h=new THREE.Mesh(new THREE.CylinderGeometry(.022,.03,.42,8),bamboo); h.position.y=.21; arm.add(h);
+  const paper=new THREE.Mesh(new THREE.CircleGeometry(.3,36),new THREE.MeshStandardMaterial({map:uTex,side:THREE.DoubleSide,roughness:.85}));
+  paper.scale.y=1.05; paper.position.y=.7; arm.add(paper);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(.3,.013,6,36),bamboo); rim.scale.y=1.05; rim.position.y=.7; arm.add(rim);
+  arm.traverse(o=>{o.castShadow=true;});
+  return {arm,side,phase:0};
+}
+
+const stoves=[makeShichirin(),makeShichirin()];
+const uchiwas=[makeUchiwa(stoves[0].g,-1),makeUchiwa(stoves[1].g,1)];
+const fishes=[makeFish(stoves[0].g,.35),makeFish(stoves[1].g,-.35)];
+
+// ---------- particles ----------
+const smokeTex=radialTex('rgba(255,255,255,.85)','rgba(255,255,255,0)');
+const sparkTex=radialTex('rgba(255,230,160,1)','rgba(255,110,0,0)');
+const parts=[];
+for(let i=0;i<90;i++){
+  const spark=i>=60;
+  const m=new THREE.SpriteMaterial({map:spark?sparkTex:smokeTex,transparent:true,depthWrite:false,opacity:0,blending:spark?THREE.AdditiveBlending:THREE.NormalBlending});
+  const sp=new THREE.Sprite(m); sp.visible=false; scene.add(sp);
+  parts.push({sp,m,spark,life:0,max:1,v:new THREE.Vector3(),s0:.2,op:.5});
+}
+function spawn(spark,x,y,z,dark){
+  const p=parts.find(q=>q.spark===spark&&q.life<=0); if(!p)return;
+  p.life=p.max=spark?.5+Math.random()*.4:1.6+Math.random()*1.2;
+  p.sp.position.set(x,y,z); p.sp.visible=true;
+  if(spark){ p.v.set((Math.random()-.5)*.8,1.4+Math.random()*1.4,(Math.random()-.5)*.8); p.s0=.05+Math.random()*.05; p.op=1; }
+  else{ p.v.set((Math.random()-.5)*.25,.55+Math.random()*.35,(Math.random()-.5)*.25); p.s0=.25+Math.random()*.2;
+    p.m.color.set(dark?0x2b2622:0xd9dde6); p.op=dark?.7:.38; }
+}
+function updateParts(dt){
+  for(const p of parts){
+    if(p.life<=0)continue; p.life-=dt;
+    if(p.life<=0){p.sp.visible=false;continue;}
+    p.sp.position.addScaledVector(p.v,dt);
+    const t=1-p.life/p.max;
+    p.sp.scale.setScalar(p.spark?p.s0:p.s0*(1+t*2.8));
+    p.m.opacity=p.op*(p.spark?(1-t):Math.sin(t*Math.PI));
+  }
+}
+
+// ---------- audio ----------
+const LS={muted:'tg.241.muted',best:'tg.241.best'};
+function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:v; }catch(e){ return d; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,String(v)); }catch(e){} }
+let muted = lsGet(LS.muted,'0')==='1';
+let actx=null,sizGain=null;
+function initAudio(){
+  if(actx)return;
+  try{
+    actx=new (window.AudioContext||window.webkitAudioContext)();
+    const len=actx.sampleRate*2, buf=actx.createBuffer(1,len,actx.sampleRate), d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(Math.random()<.03?1:.3);
+    const src=actx.createBufferSource(); src.buffer=buf; src.loop=true;
+    const hp=actx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2200;
+    sizGain=actx.createGain(); sizGain.gain.value=0;
+    src.connect(hp).connect(sizGain).connect(actx.destination); src.start();
+  }catch(e){actx=null;}
+}
+let sizzleKick=0;
+
+// ---------- game state ----------
+const RATE=4.2, MAXBOOST=2.2, ROUND=60;
+function newCook(){return{dA:0,dB:0,flipped:false,rot:0,boost:0,served:false,serveT:0,flipCd:0};}
+const player={cook:newCook()}, cpu={cook:newCook()};
+let state='title', timeLeft=ROUND, now=0, endTimer=0, holding=false;
+
+function doFlip(c){ if(c.served||c.flipCd>0)return; c.flipped=!c.flipped; c.flipCd=.45; sizzleKick=.12; }
+function cookStep(c,dt){
+  c.flipCd=Math.max(0,c.flipCd-dt);
+  if(c.served){ c.boost=Math.max(0,c.boost-dt); return; }
+  const rate=(1+c.boost)*RATE;
+  if(c.flipped){ c.dA+=rate*dt; c.dB+=rate*.1*dt; } else { c.dB+=rate*dt; c.dA+=rate*.1*dt; }
+  c.boost=Math.max(0,c.boost-.8*dt);
+}
+
+// CPU
+const cpuLinesStart=['サンマは火加減が命よ','60秒あれば十分だ','屋台歴30年、なめんなよ'];
+function say(t){ $('cpuSay').textContent=t; }
+function resetCpu(){
+  cpu.t1=74+Math.random()*14; cpu.t2=74+Math.random()*14;
+  cpu.pending=null; cpu.nextThink=0; cpu.fanning=false;
+  say(cpuLinesStart[Math.floor(Math.random()*cpuLinesStart.length)]);
+}
+function cpuThink(dt){
+  const c=cpu.cook; if(c.served)return;
+  if(cpu.fanning) c.boost=Math.min(MAXBOOST,c.boost+2.4*dt);
+  if(cpu.pending&&now>=cpu.pending.at){
+    const a=cpu.pending.a; cpu.pending=null;
+    if(a==='flip'){ doFlip(c); say('よっと、返すぜ'); }
+    else { c.served=true; c.serveT=now; say('ほい、焼き上がり！'); }
+  }
+  if(now<cpu.nextThink)return; cpu.nextThink=now+.25;
+  if(!cpu.pending){
+    if(!c.flipped&&c.dB>=cpu.t1){
+      const slow=Math.random()<.2;
+      cpu.pending={a:'flip',at:now+(slow?2+Math.random()*2:.2+Math.random()*.7)};
+      if(slow) say('……おっと、よそ見しちまった');
+    }else if(c.flipped&&c.dA>=cpu.t2){
+      cpu.pending={a:'serve',at:now+.2+Math.random()*.9};
+    }
+  }
+  const need=(!c.flipped?Math.max(0,cpu.t1-c.dB)+cpu.t2:Math.max(0,cpu.t2-c.dA))/RATE;
+  if(need>timeLeft-4){ if(!cpu.fanning)say('急がにゃ！パタパタ！'); cpu.fanning=true; }
+  else if(Math.random()<.06) cpu.fanning=!cpu.fanning;
+  else if(Math.random()<.15) cpu.fanning=false;
+}
+
+// scoring
+function sideScore(d){ if(d<70)return Math.max(0,d/70*90); if(d<=90)return 100-Math.abs(d-80); return Math.max(0,90-(d-90)*3.5); }
+function sideWord(d){ return d<55?'生':d<70?'ちょい生':d<=90?'ベスト':d<=102?'焼き強め':'焦げ'; }
+function total(c){ return Math.max(0,Math.round((sideScore(c.dA)+sideScore(c.dB))/2-(c.served?0:10))); }
+
+// ---------- UI ----------
+function paint(prefix,c){
+  let hot=false;
+  for(const s of ['A','B']){
+    const d=c['d'+s]; if(d>90&&!c.served)hot=true;
+    const f=$(prefix+s); f.style.width=Math.min(d,120)/120*100+'%';
+    f.style.background='#'+dColor(d,tmpC).getHexString();
+    const down=(s==='A')===c.flipped;
+    $(prefix+s+'l').textContent=(down&&!c.served?'🔥 ':'')+s+'面';
+    $(prefix+s+'v').textContent=Math.round(d);
+  }
+  $(prefix+'Card').classList.toggle('hot',hot);
+}
+function setButtons(){
+  const on=state==='play'&&!player.cook.served;
+  $('fan').disabled=$('flip').disabled=$('serve').disabled=!on;
+}
+
+function start(){
+  initAudio(); if(actx&&actx.state==='suspended')actx.resume();
+  player.cook=newCook(); cpu.cook=newCook(); resetCpu();
+  timeLeft=ROUND; endTimer=0; state='play';
+  $('title').hidden=true; $('result').hidden=true; setButtons();
+}
+function finish(){
+  state='result'; setButtons(); holding=false; $('fan').classList.remove('on');
+  const p=player.cook,c=cpu.cook, ps=total(p), cs=total(c);
+  $('rP').textContent=ps; $('rC').textContent=cs;
+  $('rPd').textContent=`A:${sideWord(p.dA)} / B:${sideWord(p.dB)}${p.served?'':'（時間切れ）'}`;
+  $('rCd').textContent=`A:${sideWord(c.dA)} / B:${sideWord(c.dB)}${c.served?'':'（時間切れ）'}`;
+  $('verdict').textContent=ps>cs?'あなたの勝ち！':ps<cs?'ゲンの勝ち…':'引き分け';
+  const g=ps>=95?'板前が弟子入りを頼みに来るレベル。':ps>=80?'居酒屋の看板メニューになれる焼き加減。':ps>=60?'白ごはんが進む、家庭の味。':
+    (p.dA>100||p.dB>100)?'炭のうま味が強すぎた。うちわは控えめに。':'まだ海に帰れそう。もう少し火を入れて。';
+  $('rComment').textContent=g;
+  const best=Math.max(ps, parseInt(lsGet(LS.best,'0'),10)||0);
+  lsSet(LS.best,best); $('rBest').textContent=best;
+  setTimeout(()=>{$('result').hidden=false;},900);
+}
+
+// ---------- コントロールパネル ----------
+function setMute(v){
+  muted=v; lsSet(LS.muted, muted?'1':'0');
+  const b=$('btnMute');
+  b.setAttribute('aria-pressed', muted?'true':'false');
+  b.textContent = muted?'🔇':'♪';
+  $('btnMuteDlg').textContent = '音: ' + (muted?'オフ':'オン');
+}
+function pauseGame(){
+  if(state!=='play')return;
+  state='paused'; holding=false; $('fan').classList.remove('on'); setButtons();
+  const d=$('pauseDlg'); if(!d.open && typeof d.showModal==='function') d.showModal();
+}
+function resumeGame(){
+  if(state!=='paused')return;
+  const d=$('pauseDlg'); if(d.open) d.close();
+  state='play'; clock.getDelta(); setButtons();
+}
+function quitToTitle(){
+  const d=$('pauseDlg'); if(d.open) d.close();
+  state='title'; holding=false; $('fan').classList.remove('on');
+  timeLeft=ROUND; $('result').hidden=true; $('title').hidden=false; setButtons();
+}
+$('btnMute').addEventListener('click',()=>setMute(!muted));
+$('btnMuteDlg').addEventListener('click',()=>setMute(!muted));
+$('btnPause').addEventListener('click',()=>{ state==='paused'?resumeGame():pauseGame(); });
+$('btnResume').addEventListener('click',resumeGame);
+$('btnQuit').addEventListener('click',quitToTitle);
+$('pauseDlg').addEventListener('cancel',e=>{ e.preventDefault(); resumeGame(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) pauseGame(); });
+setMute(muted);
+
+// input
+const fanBtn=$('fan');
+fanBtn.addEventListener('pointerdown',e=>{ if(fanBtn.disabled)return; e.preventDefault(); try{fanBtn.setPointerCapture(e.pointerId);}catch(_){} holding=true; fanBtn.classList.add('on'); player.cook.boost=Math.min(MAXBOOST,player.cook.boost+.25); });
+['pointerup','pointerleave','pointercancel'].forEach(ev=>fanBtn.addEventListener(ev,()=>{holding=false;fanBtn.classList.remove('on');}));
+$('flip').addEventListener('click',()=>{ if(state==='play')doFlip(player.cook); });
+$('serve').addEventListener('click',()=>{ if(state==='play'&&!player.cook.served){ player.cook.served=true; player.cook.serveT=now; setButtons(); if(!cpu.cook.served)say('お、早いな。どれどれ…'); }});
+$('startBtn').addEventListener('click',start);
+$('againBtn').addEventListener('click',start);
+addEventListener('keydown',e=>{
+  if(e.key==='Escape'||e.key==='p'||e.key==='P'){ e.preventDefault(); state==='paused'?resumeGame():pauseGame(); return; }
+  if(state==='paused') return;
+  if(state!=='play'){ if(e.key==='Enter'){ e.preventDefault(); start(); } return; }
+  if(e.code==='Space'){ e.preventDefault(); if(!player.cook.served){holding=true;fanBtn.classList.add('on');} }
+  if(e.key==='f'||e.key==='F') $('flip').click();
+  if(e.key==='Enter') $('serve').click();
+});
+addEventListener('keyup',e=>{ if(e.code==='Space'){holding=false;fanBtn.classList.remove('on');} });
+
+// camera fit
+function fit(){
+  const w=innerWidth,h=innerHeight,a=w/h; renderer.setSize(w,h);
+  const portrait=a<1;
+  camera.fov=portrait?58:42; camera.aspect=a;
+  const gap=portrait?1.0:1.55;
+  stoves[0].g.position.x=-gap; stoves[1].g.position.x=gap;
+  const hf=2*Math.atan(Math.tan(THREE.MathUtils.degToRad(camera.fov)/2)*a);
+  const d=Math.max(portrait?6:5.4,(gap+1.45)/Math.tan(hf/2));
+  camera.position.set(0,d*.8,d*.6);
+  camera.lookAt(0,portrait?.55:.7,portrait?-.1:.15);
+  scene.fog.near=d*1.1; scene.fog.far=d*2.8;
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize',fit); fit();
+
+// ---------- loop ----------
+const clock=new THREE.Clock();
+const cooks=()=>[player.cook,cpu.cook];
+function frame(){
+  requestAnimationFrame(frame);
+  let dt=Math.min(clock.getDelta(),.05);
+  if(state==='paused') dt=0;
+  now+=dt;
+
+  if(state==='play'){
+    timeLeft-=dt;
+    if(holding&&!player.cook.served) player.cook.boost=Math.min(MAXBOOST,player.cook.boost+2.6*dt);
+    cookStep(player.cook,dt); cookStep(cpu.cook,dt); cpuThink(dt);
+    if(timeLeft<=0){ timeLeft=0; finish(); }
+    else if(player.cook.served&&cpu.cook.served){ endTimer+=dt; if(endTimer>.8)finish(); }
+  }
+  $('timer').firstChild.nodeValue=Math.ceil(timeLeft);
+
+  cooks().forEach((c,i)=>{
+    const st=stoves[i], f=fishes[i], heat=c.boost/MAXBOOST;
+    const flick=Math.sin(now*9+i*2)*.08+Math.sin(now*23+i)*.05;
+    st.coalMats[0].emissiveIntensity=.65+heat*1.1+flick;
+    st.coalMats[1].emissiveIntensity=.55+heat*1.0-flick;
+    st.windowMat.emissiveIntensity=.4+heat*1.2+flick;
+    st.light.intensity=1+heat*1.6+flick*2;
+
+    const u=uchiwas[i]; u.phase+=dt*(2.5+heat*22);
+    u.arm.rotation.x=-.35+Math.sin(u.phase)*(.05+heat*.6);
+    u.arm.rotation.z=-u.side*.12;
+
+    // flip animation
+    const target=c.flipped?Math.PI:0;
+    const diff=target-c.rot; c.rot+=Math.sign(diff)*Math.min(Math.abs(diff),dt*7);
+    f.flip.rotation.x=c.rot;
+    const lift=Math.sin(c.rot)*.45;
+    const served=c.served?Math.min(1,(now-c.serveT)*2):0;
+    f.holder.position.y=1.08+lift+served*(.55+Math.sin(now*2+i)*.04);
+
+    dColor(c.dA,f.mA.color); dColor(c.dB,f.mB.color);
+    f.mA.metalness=.35*(1-Math.min(c.dA,60)/60); f.mA.roughness=.35+Math.min(c.dA,120)/120*.55;
+    f.mB.metalness=.35*(1-Math.min(c.dB,60)/60); f.mB.roughness=.35+Math.min(c.dB,120)/120*.55;
+    dColor((c.dA+c.dB)/2*1.05,f.tailMat.color).multiplyScalar(.85);
+    f.eyeA.color.set(0x111111).lerp(tmpC.set(0xeeeae0),Math.min(1,Math.max(0,(c.dA-35)/35)));
+    f.eyeB.color.set(0x111111).lerp(tmpC.set(0xeeeae0),Math.min(1,Math.max(0,(c.dB-35)/35)));
+
+    if(state==='play'||state==='result'){
+      const maxD=Math.max(c.dA,c.dB);
+      const rate=(c.served?.4:1)*(.4+maxD/35)*(.7+heat*1.2);
+      if(Math.random()<rate*dt*3){
+        const x=st.g.position.x+(Math.random()-.5)*.8;
+        spawn(false,x,1.2+f.holder.position.y-1.08,(Math.random()-.5)*.4,maxD>100&&Math.random()<.7);
+      }
+      if(heat>.25&&Math.random()<heat*dt*14){
+        spawn(true,st.g.position.x+(Math.random()-.5)*.9,1.0,(Math.random()-.5)*.9);
+      }
+    }
+  });
+
+  updateParts(dt);
+
+  if(state==='play'||state==='result'){ paint('p',player.cook); paint('c',cpu.cook); }
+
+  if(sizGain&&actx){
+    const p=player.cook;
+    let g=0;
+    if(state==='play'){ g=(p.served?.008:.025+.05*(p.boost/MAXBOOST))+(cpu.cook.served?0:.012); }
+    g+=sizzleKick; sizzleKick=Math.max(0,sizzleKick-dt*.4);
+    if(muted) g=0;
+    sizGain.gain.setTargetAtTime(g,actx.currentTime,.05);
+  }
+
+  // idle camera sway on title
+  if(state==='title'){ camera.position.x=Math.sin(now*.4)*.6; camera.lookAt(0,.7,0); }
+  else if(Math.abs(camera.position.x)>.001){ camera.position.x*=.9; fit(); }
+
+  renderer.render(scene,camera);
+}
+frame();
+</script>
+</body>
+</html>
