@@ -10,3 +10,10 @@
 - 幕付きタイトル＋canvas の構成は harness のタップ判定で必ず FAIL する（台帳に2件記録あり）。今回は**幕を canvas より前へ移し、重なり順を z-index で明示**して解決した。DOM順に頼った重なりをやめれば、幕を前に置いても表示は崩れない。**偽陽性として見送らず実際に直せた3件目**。
 - 検証: harness PASS ／ 操作盤の機能テスト **18/18 PASS**（ポーズで残り時間が止まる、Pキー・Escape、タブ非表示で自動ポーズ、リロード後もミュート保持、JSエラー0件）。
 - 未検証: iPhone 実機の発熱・FPS。
+
+## 2026-09-19 旧エントリURLの404を修復
+- 症状: `https://titan11111.github.io/241-shichirin-sanma/shichirin-sanma-battle.html` が **404**。本体（`/241-shichirin-sanma/`）は 200 で生きていた
+- 原因: エントリを `shichirin-sanma-battle.html` → `index.html` へ改名したため、**改名前に配ったリンクだけが死んだ**
+- 対処: `shichirin-sanma-battle.html` を index.html へのリダイレクト専用ページとして復活（meta refresh ＋ `location.replace()`。`?query`・`#hash` も引き継ぐ）
+- 検出元: `_tools/check-legacy-entry.sh`（245の同種事故を機に新設）。本番URLへcurlを撃って検出
+- 鉄則8: エントリ名を変えたら旧名をリダイレクトで必ず残す（本体URLが200のままなので気づけない）
