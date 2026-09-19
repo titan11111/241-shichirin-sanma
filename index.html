@@ -7,10 +7,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#121829">
-<meta name="description" content="屋台の焼き場のゲンと60秒で焼き加減勝負。うちわで火力を操り、両面をベストに焼き上げる3D対戦ゲーム。">
-<title>七輪サンマ焼きバトル</title>
+<meta name="description" content="三皿焼いて総合勝負。その日の火と気温で、団扇の加減が変わる。">
+<title>七輪 秋刀魚</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Chokokutai&family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#121829; --panel:rgba(243,234,216,.92); --panelInk:#1c1a17;
@@ -36,11 +36,15 @@ canvas{position:fixed;inset:0;display:block;z-index:0}
 .zone{position:absolute;left:58.33%;width:16.67%;top:0;bottom:0;background:rgba(110,200,120,.55)}
 .fill{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:5px}
 #timer{font-family:"Dela Gothic One",sans-serif;font-size:34px;color:var(--ember);text-shadow:0 3px 0 #000;min-width:62px;text-align:center;line-height:1}
-#timer small{display:block;font-family:"M PLUS Rounded 1c";font-size:10px;color:#f3ead8;text-shadow:none;margin-top:2px}
+#timer small{display:block;font-family:"M PLUS Rounded 1c";font-size:11px;color:#f3ead8;text-shadow:none;margin-top:2px;letter-spacing:.2em}
+#wind{min-height:22px;padding:2px 9px;border-radius:11px;color:#f3ead8;background:rgba(38,56,106,.82);font-size:12px;font-weight:800;letter-spacing:.08em;opacity:0;transform:translateY(-5px);transition:opacity .2s,transform .2s;white-space:nowrap}
+#wind.on{opacity:1;transform:translateY(0);animation:wind-shiver .36s ease-in-out infinite alternate}
+@keyframes wind-shiver{to{transform:translateX(3px)}}
+@media (prefers-reduced-motion:reduce){#wind.on{animation:none}}
 #cpuSay{font-size:11px;margin-top:4px;min-height:14px;opacity:.85}
 #pad{z-index:3;position:fixed;bottom:calc(14px + env(safe-area-inset-bottom));left:0;right:0;display:flex;gap:9px;justify-content:center;padding:0 12px}
-#pad button{font:inherit;font-weight:800;border:0;border-radius:14px;padding:15px 6px;flex:1;max-width:170px;font-size:15px;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.45);touch-action:none}
-#pad button:active,#fan.on{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.45)}
+#pad button{font:inherit;font-weight:800;border:0;border-radius:14px;padding:15px 6px;flex:1;max-width:170px;min-height:56px;font-size:15px;color:#fff;box-shadow:0 5px 0 rgba(0,0,0,.45);touch-action:none;transition:transform .08s ease,opacity .08s ease,box-shadow .08s ease}
+#pad button:active,#pad button.is-pressed,#fan.on{transform:translateY(4px);box-shadow:0 1px 0 rgba(0,0,0,.45)}
 #fan{background:var(--indigo)} #flip{background:var(--wood)} #serve{background:var(--lantern)}
 button:focus-visible{outline:3px solid var(--ember);outline-offset:2px}
 button:disabled{opacity:.35}
@@ -58,19 +62,59 @@ button:disabled{opacity:.35}
 .ov{z-index:5;position:fixed;inset:0;display:grid;place-items:center;background:rgba(10,12,24,.66);padding:20px}
 .ov[hidden]{display:none}
 .box{background:var(--paper);color:var(--ink);border-radius:20px;padding:24px 22px;max-width:350px;width:100%;text-align:center}
-h1{font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-height:1.12;margin:0 0 10px;color:var(--lantern)}
+h1{display:flex;flex-direction:column;align-items:center;gap:10px;margin:0 0 14px;font-weight:400;line-height:1}
+.brand{font-family:"Chokokutai","Hiragino Mincho ProN","Yu Mincho",serif;font-size:13px;letter-spacing:.62em;padding:5px 18px 5px calc(18px + .62em);color:#f3ead8;background:var(--lantern);box-shadow:3px 3px 0 #7a1c17}
+.title-main{font-family:"Chokokutai","Hiragino Mincho ProN","Yu Mincho",serif;font-size:52px;letter-spacing:.28em;padding:2px 0 2px .28em;color:var(--ink);text-shadow:2px 0 0 #7a1c17,-2px 0 0 #7a1c17,0 2px 0 #7a1c17,0 -2px 0 #7a1c17,4px 4px 0 #4a1410;position:relative}
+.title-main::before,.title-main::after{content:"";display:block;width:100%;height:3px;margin:0 auto;background:linear-gradient(90deg,transparent, #c9a227 12%, #f3ead8 50%, #c9a227 88%, transparent);box-shadow:0 1px 0 #7a1c17}
+.title-main::before{margin-bottom:8px}
+.title-main::after{margin-top:8px}
+@media (max-width:380px){.title-main{font-size:42px}}
 .box p{margin:6px 0;font-size:14px;line-height:1.6}
+#today{font-size:13px;letter-spacing:.08em;opacity:.88;margin:2px 0 0}
 .how{text-align:left;background:rgba(0,0,0,.07);border-radius:12px;padding:10px 12px;margin:12px 0;font-size:13px;line-height:1.75}
 .big{font:inherit;font-weight:800;font-size:18px;border:0;border-radius:14px;padding:14px 26px;background:var(--lantern);color:#fff;box-shadow:0 5px 0 #7a1c17;margin-top:8px}
 .big:active{transform:translateY(4px);box-shadow:0 1px 0 #7a1c17}
 #verdict{font-family:"Dela Gothic One",sans-serif;font-size:30px;margin:0 0 8px;color:var(--lantern)}
+#judgement{overflow:hidden;background:radial-gradient(circle at 50% 50%,rgba(248,210,112,.2),rgba(48,12,8,.88)),repeating-conic-gradient(from -8deg at 50% 50%,#a7271f 0deg 9deg,#e6b94e 9deg 18deg)}
+#judgement .judge-board{position:relative;width:min(92vw,520px);padding:30px 18px 28px;text-align:center;color:#27120b;background:#ead8ae;border:8px double #3a160f;box-shadow:0 0 0 5px #d49b32,12px 14px 0 rgba(29,8,5,.55);transform:rotate(-1deg);animation:judge-in .48s cubic-bezier(.2,.9,.25,1.25)}
+#judgement .judge-board::before,#judgement .judge-board::after{content:"★";position:absolute;top:9px;color:#a7271f;font-size:22px}
+#judgement .judge-board::before{left:13px}#judgement .judge-board::after{right:13px}
+.judge-kicker{font-family:"Chokokutai","Yu Mincho",serif;font-size:clamp(26px,7vw,46px);letter-spacing:.12em;color:#a7271f;text-shadow:2px 2px 0 #d8a83d;margin:0 0 10px}
+.judge-winner{font-family:"Dela Gothic One","M PLUS Rounded 1c",sans-serif;font-size:clamp(24px,6.5vw,46px);line-height:1.25;letter-spacing:-.04em;white-space:nowrap;margin:0;padding:12px 2px;border-top:3px solid #3a160f;border-bottom:3px solid #3a160f}
+.judge-stamp{display:inline-block;margin-top:15px;padding:4px 11px;border:3px solid #a7271f;color:#a7271f;font-family:"Chokokutai","Yu Mincho",serif;font-size:18px;letter-spacing:.2em;transform:rotate(-5deg)}
+@keyframes judge-in{from{opacity:0;transform:scale(.55) rotate(5deg)}to{opacity:1;transform:scale(1) rotate(-1deg)}}
+@media (prefers-reduced-motion:reduce){#judgement .judge-board{animation:none}}
 .scores{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
 .sc{background:rgba(0,0,0,.07);border-radius:12px;padding:10px 6px}
 .sc b{display:block;font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:34px;line-height:1.1}
 .sc span{font-size:12px;display:block;line-height:1.5}
 .best{font-size:13px;opacity:.8}.best b{font-size:18px}
+#hud[hidden],#pad[hidden]{display:none!important}
+#ending.ov{display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px 12px calc(16px + env(safe-area-inset-bottom));background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.05) 3px,rgba(0,0,0,.05) 6px),radial-gradient(ellipse 92% 72% at 50% 30%,#ffe19c 0%,#e07a32 36%,#5a2414 66%,#120c0a 100%)}
+#ending.ov[hidden]{display:none}
+.kage-stage{width:100%;max-width:420px;display:flex;flex-direction:column;align-items:stretch}
+.guests{display:grid;grid-template-columns:1fr 1fr 1fr;align-items:end;gap:2px;filter:drop-shadow(0 0 14px rgba(255,140,40,.4))}
+.guest{opacity:.28;transform:translateY(10px);transition:opacity .35s ease,transform .35s ease;text-align:center}
+.guest.on{opacity:1;transform:translateY(0)}
+.guest svg{width:100%;height:auto;display:block;overflow:visible;fill:#0b0705;stroke:#0b0705;stroke-linecap:round;stroke-linejoin:round}
+.guest .carve{fill:#d77a32;stroke:none;opacity:.82}
+.guest .detail{fill:none;stroke:#d77a32;stroke-width:1.4;opacity:.78}
+.guest .joint{fill:#b98a36;stroke:#2a1208;stroke-width:1.2}
+.guest.eat svg{animation:kage-eat .42s ease}
+@keyframes kage-eat{0%,100%{transform:none}40%{transform:rotate(-7deg) translateY(5px)}}
+@media (prefers-reduced-motion:reduce){.guest,.guest.on{transition:none}.guest.eat svg{animation:none}}
+.guest b{display:block;margin-top:2px;font-family:"Chokokutai","Hiragino Mincho ProN",serif;font-weight:400;font-size:12px;letter-spacing:.18em;color:#2a140c;text-shadow:0 1px 0 rgba(255,220,160,.35)}
+.plates{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:4px 6px 10px}
+.dish{position:relative;aspect-ratio:1.7/1;border-radius:50%;background:radial-gradient(ellipse at 50% 38%,#efe6d4 0%,#b9a48a 55%,#6d5a45 100%);box-shadow:0 6px 0 rgba(0,0,0,.25),inset 0 0 0 3px #c4b49a}
+.dish .sanma{position:absolute;left:10%;right:10%;top:28%;width:80%;overflow:visible}
+.dish .sanma{filter:drop-shadow(0 4px 2px rgba(40,20,8,.35))}
+.dish.eaten .sanma{opacity:.22;transform:scale(.62);transform-origin:50% 50%;transition:opacity .4s,transform .4s}
+.kage-who{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.kage-line{min-height:48px;margin:4px 0 8px;padding:8px 12px;text-align:center;font-size:15px;line-height:1.55;color:#1c120c;background:rgba(243,234,216,.55);border:1px solid rgba(90,40,20,.25)}
+.kage-final{margin:0 0 8px;text-align:center;font-size:14px;line-height:1.5;color:#1c120c}
+#ending .big{width:100%}
 </style>
-    <meta property="og:title" content="七輪サンマ焼きバトル">
+    <meta property="og:title" content="七輪 秋刀魚">
     <meta property="og:description" content="スマホ・PCのブラウザで遊べる無料ゲームです。インストール不要！">
     <meta property="og:url" content="https://titan11111.github.io/241-shichirin-sanma/">
     <meta property="og:type" content="website">
@@ -80,13 +124,14 @@ h1{font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-
 
 <div class="ov" id="title">
   <div class="box">
-    <h1>七輪<br>サンマ焼きバトル</h1>
-    <p>屋台の焼き場のゲンと、60秒で焼き加減勝負。</p>
+    <h1><span class="brand">七輪</span><span class="title-main">秋刀魚</span></h1>
+    <p>三皿焼いて、総合で勝負。</p>
+    <p id="today"></p>
     <div class="how">
-      🔥 下を向いてる面が焼ける<br>
-      🪭 うちわ長押しで火力アップ<br>
-      🟩 両面ともゲージの緑（70〜90）がベスト<br>
-      🐟 焼けたら「焼き上がり！」で皿へ
+      下を向いてる面が焼ける<br>
+      団扇は加減。押しっぱなしは危険<br>
+      バーの緑がベスト<br>
+      三皿出して、客が食べる
     </div>
     <button class="big" id="startBtn">焼き始める</button>
   </div>
@@ -95,11 +140,12 @@ h1{font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-
 <div id="hud">
   <div class="card" id="pCard">
     <div class="who">あなた</div>
-    <div class="row"><div class="lbl"><span id="pAl">A面</span><span id="pAv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="pA"></div></div></div>
-    <div class="row"><div class="lbl"><span id="pBl">B面</span><span id="pBv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="pB"></div></div></div>
+    <div class="row"><div class="lbl"><span id="pAl">A面</span></div><div class="bar"><div class="zone"></div><div class="fill" id="pA"></div></div></div>
+    <div class="row"><div class="lbl"><span id="pBl">B面</span></div><div class="bar"><div class="zone"></div><div class="fill" id="pB"></div></div></div>
   </div>
   <div id="center">
-    <div id="timer">60<small>秒</small></div>
+    <div id="timer">54<small>一皿</small></div>
+    <div id="wind" role="status" aria-live="polite"></div>
     <div id="sys">
       <button type="button" class="icon-btn" id="btnMute" aria-label="音の切り替え" aria-pressed="false">♪</button>
       <button type="button" class="icon-btn" id="btnPause" aria-label="一時停止">Ⅱ</button>
@@ -107,29 +153,75 @@ h1{font-family:"Dela Gothic One",sans-serif;font-weight:400;font-size:32px;line-
   </div>
   <div class="card" id="cCard">
     <div class="who">焼き場のゲン</div>
-    <div class="row"><div class="lbl"><span id="cAl">A面</span><span id="cAv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="cA"></div></div></div>
-    <div class="row"><div class="lbl"><span id="cBl">B面</span><span id="cBv">0</span></div><div class="bar"><div class="zone"></div><div class="fill" id="cB"></div></div></div>
+    <div class="row"><div class="lbl"><span id="cAl">A面</span></div><div class="bar"><div class="zone"></div><div class="fill" id="cA"></div></div></div>
+    <div class="row"><div class="lbl"><span id="cBl">B面</span></div><div class="bar"><div class="zone"></div><div class="fill" id="cB"></div></div></div>
     <div id="cpuSay"></div>
   </div>
 </div>
 
 <div id="pad">
-  <button id="fan" disabled>うちわ<br><small>長押し</small></button>
+  <button id="fan" disabled>団扇<br><small>加減</small></button>
   <button id="flip" disabled>ひっくり<br>返す</button>
   <button id="serve" disabled>焼き<br>上がり！</button>
 </div>
 
+<div class="ov" id="judgement" hidden>
+  <div class="judge-board">
+    <p class="judge-kicker">判定は！！！</p>
+    <p class="judge-winner" id="judgeWinner">あなたの勝利！</p>
+    <span class="judge-stamp">三皿勝負</span>
+  </div>
+</div>
 
-<div class="ov" id="result" hidden>
-  <div class="box">
-    <div id="verdict">勝ち！</div>
-    <div class="scores">
-      <div class="sc"><span>あなた</span><b id="rP">0</b><span id="rPd"></span></div>
-      <div class="sc"><span>ゲン</span><b id="rC">0</b><span id="rCd"></span></div>
+<div class="ov" id="ending" hidden>
+  <div class="kage-stage">
+    <div class="guests">
+      <div class="guest" id="g0">
+        <svg viewBox="0 0 100 170" aria-hidden="true">
+          <path d="M48 17 Q54 4 61 17 L69 2 72 20 83 12 78 28 Q87 34 89 42 L80 45 88 50 78 54 Q73 68 58 66 45 64 42 53 35 45 40 34Z"/>
+          <path d="M44 58 Q57 67 72 60 L77 79 Q69 93 73 111 L85 164 25 164 38 109 Q43 90 36 75Z"/>
+          <path d="M69 72 Q81 76 88 91 L96 113" fill="none" stroke-width="8"/><path d="M96 113 Q83 126 68 128" fill="none" stroke-width="6"/>
+          <path d="M38 74 Q25 83 18 101 L9 119" fill="none" stroke-width="8"/><path d="M9 119 25 133" fill="none" stroke-width="6"/>
+          <circle class="joint" cx="88" cy="91" r="4"/><circle class="joint" cx="18" cy="101" r="4"/>
+          <circle class="carve" cx="70" cy="38" r="1.8"/><path class="detail" d="M50 79 Q58 88 67 79M45 94 Q56 104 70 94M40 112 Q56 122 75 111M35 131 Q56 142 79 130"/>
+          <path class="carve" d="M49 70 55 75 49 80 43 75ZM63 70 69 75 63 80 57 75ZM49 101 55 106 49 111 43 106ZM66 119 72 124 66 129 60 124Z"/>
+        </svg>
+        <b>女優</b>
+      </div>
+      <div class="guest" id="g1">
+        <svg viewBox="0 0 100 170" aria-hidden="true">
+          <path d="M28 43 Q29 23 47 19 65 16 73 29 L88 34 75 40 Q75 53 65 60 L72 72 50 75 41 62 Q28 59 28 43Z"/>
+          <path d="M48 58 Q42 72 31 79 19 91 20 111 L14 164 82 164 78 119 Q78 91 65 71Z"/>
+          <path d="M65 78 Q80 84 84 99 L91 119" fill="none" stroke-width="8"/><path d="M91 119 70 132" fill="none" stroke-width="6"/>
+          <path d="M31 83 Q20 92 12 111" fill="none" stroke-width="7"/><path d="M12 111 28 128" fill="none" stroke-width="6"/>
+          <path d="M72 36 Q77 48 66 62 L60 70 Q53 57 54 48"/>
+          <circle class="joint" cx="84" cy="99" r="4"/><circle class="joint" cx="12" cy="111" r="4"/>
+          <circle class="carve" cx="59" cy="34" r="1.7"/><path class="detail" d="M33 90 Q47 101 67 89M28 108 Q48 120 75 106M24 130 Q49 143 78 127"/>
+          <path class="carve" d="M40 78 46 84 40 90 34 84ZM58 83 64 89 58 95 52 89ZM43 111 49 117 43 123 37 117ZM63 130 69 136 63 142 57 136Z"/>
+          <path d="M69 126 98 107M71 132 100 113" fill="none" stroke-width="2.8"/>
+        </svg>
+        <b>常連</b>
+      </div>
+      <div class="guest" id="g2">
+        <svg viewBox="0 0 100 170" aria-hidden="true">
+          <path d="M37 35 Q37 18 51 14 L55 1 61 14 70 8 68 20 Q78 24 80 34 L93 39 80 45 Q76 58 62 61 47 62 40 50Z"/>
+          <path d="M47 57 Q59 63 72 57 L78 91 70 116 34 116 29 89 38 60Z"/>
+          <path d="M35 68 Q22 76 15 92 L5 108" fill="none" stroke-width="7"/><path d="M5 108 20 123" fill="none" stroke-width="5.5"/>
+          <path d="M72 67 Q86 74 91 91 L98 106" fill="none" stroke-width="7"/><path d="M98 106 86 122" fill="none" stroke-width="5.5"/>
+          <path d="M42 113 28 159" fill="none" stroke-width="10"/><path d="M66 113 78 159" fill="none" stroke-width="10"/>
+          <path d="M21 159 36 159M72 159 88 159" fill="none" stroke-width="7"/>
+          <circle class="joint" cx="15" cy="92" r="3.8"/><circle class="joint" cx="91" cy="91" r="3.8"/>
+          <circle class="carve" cx="68" cy="34" r="1.7"/><path class="detail" d="M41 70 68 94M67 70 39 95M37 101 Q54 110 72 101"/>
+          <path class="carve" d="M48 68 54 74 48 80 42 74ZM61 80 67 86 61 92 55 86ZM47 94 53 100 47 106 41 100Z"/>
+        </svg>
+        <b>小僧</b>
+      </div>
     </div>
-    <p id="rComment"></p>
-    <p class="best">自己ベスト <b id="rBest">0</b></p>
-    <button class="big" id="againBtn">もう一匹焼く</button>
+    <div class="plates" id="endPlates"></div>
+    <div class="kage-who" id="endWho"></div>
+    <div class="kage-line" id="endLine">三皿、お待ち。</div>
+    <p class="kage-final" id="endFinal" hidden></p>
+    <button class="big" id="againBtn" hidden>もう三皿</button>
   </div>
 </div>
 
@@ -305,74 +397,153 @@ const LS={muted:'tg.241.muted',best:'tg.241.best'};
 function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v===null?d:v; }catch(e){ return d; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,String(v)); }catch(e){} }
 let muted = lsGet(LS.muted,'0')==='1';
-let actx=null,sizGain=null;
+let actx=null,sizGain=null,noiseBuf=null;
 function initAudio(){
   if(actx)return;
   try{
     actx=new (window.AudioContext||window.webkitAudioContext)();
     const len=actx.sampleRate*2, buf=actx.createBuffer(1,len,actx.sampleRate), d=buf.getChannelData(0);
     for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*(Math.random()<.03?1:.3);
+    noiseBuf=buf;
     const src=actx.createBufferSource(); src.buffer=buf; src.loop=true;
     const hp=actx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=2200;
     sizGain=actx.createGain(); sizGain.gain.value=0;
     src.connect(hp).connect(sizGain).connect(actx.destination); src.start();
   }catch(e){actx=null;}
 }
-let sizzleKick=0;
-
-// ---------- game state ----------
-const RATE=4.2, MAXBOOST=2.2, ROUND=60;
-function newCook(){return{dA:0,dB:0,flipped:false,rot:0,boost:0,served:false,serveT:0,flipCd:0};}
-const player={cook:newCook()}, cpu={cook:newCook()};
-let state='title', timeLeft=ROUND, now=0, endTimer=0, holding=false;
-
-function doFlip(c){ if(c.served||c.flipCd>0)return; c.flipped=!c.flipped; c.flipCd=.45; sizzleKick=.12; }
-function cookStep(c,dt){
-  c.flipCd=Math.max(0,c.flipCd-dt);
-  if(c.served){ c.boost=Math.max(0,c.boost-dt); return; }
-  const rate=(1+c.boost)*RATE;
-  if(c.flipped){ c.dA+=rate*dt; c.dB+=rate*.1*dt; } else { c.dB+=rate*dt; c.dA+=rate*.1*dt; }
-  c.boost=Math.max(0,c.boost-.8*dt);
+let sizzleKick=0, lastFlapMs=0, flapBusy=0, flapPhase=0;
+function playFlap(busy){
+  if(!actx||!noiseBuf||muted) return;
+  if(actx.state==='suspended'){ actx.resume().catch(()=>{}); }
+  const t=actx.currentTime;
+  const n=1+(busy>.35?1:0)+(busy>.75?1:0);
+  for(let i=0;i<n;i++){
+    const at=t+i*(.016-busy*.008);
+    const src=actx.createBufferSource(); src.buffer=noiseBuf;
+    const bp=actx.createBiquadFilter(); bp.type='bandpass';
+    bp.frequency.value=780+busy*1100+i*220; bp.Q.value=1.6+busy;
+    const g=actx.createGain();
+    const peak=(.07+.05*busy)/(1+i*.35);
+    g.gain.setValueAtTime(0,at);
+    g.gain.linearRampToValueAtTime(peak,at+.01);
+    g.gain.exponentialRampToValueAtTime(.001,at+.055+busy*.02);
+    src.connect(bp).connect(g).connect(actx.destination);
+    src.start(at); src.stop(at+.09);
+  }
+  const o=actx.createOscillator(); o.type='triangle'; o.frequency.value=170+busy*90;
+  const og=actx.createGain();
+  og.gain.setValueAtTime(.035+.03*busy,t);
+  og.gain.exponentialRampToValueAtTime(.001,t+.035);
+  o.connect(og).connect(actx.destination); o.start(t); o.stop(t+.05);
+}
+function flapNow(){
+  const ms=performance.now();
+  const gap=ms-lastFlapMs;
+  if(gap<36){ flapBusy=Math.min(1,flapBusy+.2); return; }
+  lastFlapMs=ms;
+  const hit=Math.max(0,Math.min(1,(240-gap)/210));
+  flapBusy=Math.min(1, flapBusy*.62+hit);
+  playFlap(flapBusy);
 }
 
-// CPU
-const cpuLinesStart=['サンマは火加減が命よ','60秒あれば十分だ','屋台歴30年、なめんなよ'];
+// ---------- その日の火と気温（日付で固定。ゲージは出さない） ----------
+const PLATES=3, ROUND=54, BASE=3.15, HEAT_MAX=1.25, DISH=['一皿','二皿','三皿'];
+function todayKey(){ const d=new Date(); return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
+function hash01(n){ n=((n|0)*2654435761)>>>0; return n/4294967296; }
+function makeDay(seed){
+  const r1=hash01(seed+17), r2=hash01(seed+91);
+  const fireI=r1<.34?0:r1<.67?1:2;
+  const fires=[{name:'弱め',rest:.2,mul:.74},{name:'いつもの',rest:.46,mul:1},{name:'強め',rest:.7,mul:1.16}];
+  const temp=Math.round(16+r2*18);
+  return {seed,fireI,temp,settle:.5+(34-temp)/18*1.4,leak:.05+(temp-16)/18*.12,fanPush:.72,...fires[fireI]};
+}
+const day=makeDay(todayKey());
+$('today').textContent='本日　'+day.name+'の火　／　'+day.temp+'℃';
+
+function newCook(){return{dA:0,dB:0,flipped:false,rot:0,heat:day.rest,served:false,serveT:0,flipCd:0};}
+const player={cook:newCook(),plates:[]}, cpu={cook:newCook(),plates:[]};
+let state='title', timeLeft=ROUND, now=0, endTimer=0, holding=false;
+const WIND_BOOST=1.38;
+let windActive=false, windUntil=0, nextWindAt=0;
+
+function scheduleWind(){ nextWindAt=now+9+Math.random()*9; }
+function stopWind(){
+  windActive=false; windUntil=0;
+  $('wind').classList.remove('on'); $('wind').textContent='';
+}
+function updateWind(){
+  if(windActive){
+    if(now>=windUntil){ stopWind(); scheduleWind(); }
+    return;
+  }
+  if(now>=nextWindAt){
+    windActive=true; windUntil=now+3+Math.random()*2;
+    $('wind').textContent='彡 風だ！ 焼き加速'; $('wind').classList.add('on');
+    sizzleKick=Math.max(sizzleKick,.18);
+    if(navigator.vibrate) navigator.vibrate([18,35,18]);
+  }
+}
+
+function doFlip(c){ if(c.served||c.flipCd>0)return; c.flipped=!c.flipped; c.flipCd=.45; sizzleKick=.12; }
+function cookStep(c,dt,fanning){
+  c.flipCd=Math.max(0,c.flipCd-dt);
+  if(fanning) c.heat=Math.min(HEAT_MAX,c.heat+day.fanPush*dt);
+  else c.heat+=(day.rest-c.heat)*dt*day.settle;
+  if(c.served) return;
+  const rate=BASE*(.5+c.heat)*day.mul*(windActive?WIND_BOOST:1);
+  if(c.flipped){ c.dA+=rate*dt; c.dB+=rate*day.leak*dt; } else { c.dB+=rate*dt; c.dA+=rate*day.leak*dt; }
+}
+
 function say(t){ $('cpuSay').textContent=t; }
+function weatherLine(){
+  if(day.fireI===2) return '今日は火が強い。団扇は軽くね';
+  if(day.fireI===0) return '火が弱い。団扇で起こしてけ';
+  if(day.temp>=28) return '暑い日は火が残りやすい';
+  if(day.temp<=18) return '冷えてる。火が逃げやすいぞ';
+  return 'いつもの火だ。加減で勝負';
+}
 function resetCpu(){
-  cpu.t1=74+Math.random()*14; cpu.t2=74+Math.random()*14;
+  cpu.t1=74+Math.random()*12; cpu.t2=74+Math.random()*12;
   cpu.pending=null; cpu.nextThink=0; cpu.fanning=false;
-  say(cpuLinesStart[Math.floor(Math.random()*cpuLinesStart.length)]);
 }
 function cpuThink(dt){
   const c=cpu.cook; if(c.served)return;
-  if(cpu.fanning) c.boost=Math.min(MAXBOOST,c.boost+2.4*dt);
   if(cpu.pending&&now>=cpu.pending.at){
     const a=cpu.pending.a; cpu.pending=null;
     if(a==='flip'){ doFlip(c); say('よっと、返すぜ'); }
-    else { c.served=true; c.serveT=now; say('ほい、焼き上がり！'); }
+    else { closePlate(cpu); say('ほい、'+DISH[cpu.plates.length-1]); }
   }
   if(now<cpu.nextThink)return; cpu.nextThink=now+.25;
+  if(c.heat>0.7) cpu.fanning=false;
+  else if(c.heat<0.5) cpu.fanning=true;
+  else if(Math.random()<.12) cpu.fanning=!cpu.fanning;
   if(!cpu.pending){
     if(!c.flipped&&c.dB>=cpu.t1){
-      const slow=Math.random()<.2;
-      cpu.pending={a:'flip',at:now+(slow?2+Math.random()*2:.2+Math.random()*.7)};
+      const slow=Math.random()<.18;
+      cpu.pending={a:'flip',at:now+(slow?1.6+Math.random()*1.8:.2+Math.random()*.6)};
       if(slow) say('……おっと、よそ見しちまった');
     }else if(c.flipped&&c.dA>=cpu.t2){
-      cpu.pending={a:'serve',at:now+.2+Math.random()*.9};
+      cpu.pending={a:'serve',at:now+.2+Math.random()*.8};
     }
   }
-  const need=(!c.flipped?Math.max(0,cpu.t1-c.dB)+cpu.t2:Math.max(0,cpu.t2-c.dA))/RATE;
-  if(need>timeLeft-4){ if(!cpu.fanning)say('急がにゃ！パタパタ！'); cpu.fanning=true; }
-  else if(Math.random()<.06) cpu.fanning=!cpu.fanning;
-  else if(Math.random()<.15) cpu.fanning=false;
+  const rate=Math.max(.8,BASE*(.5+c.heat)*day.mul);
+  const need=(!c.flipped?Math.max(0,cpu.t1-c.dB)+cpu.t2:Math.max(0,cpu.t2-c.dA))/rate;
+  if(need>timeLeft-4) cpu.fanning=true;
 }
 
-// scoring
 function sideScore(d){ if(d<70)return Math.max(0,d/70*90); if(d<=90)return 100-Math.abs(d-80); return Math.max(0,90-(d-90)*3.5); }
 function sideWord(d){ return d<55?'生':d<70?'ちょい生':d<=90?'ベスト':d<=102?'焼き強め':'焦げ'; }
 function total(c){ return Math.max(0,Math.round((sideScore(c.dA)+sideScore(c.dB))/2-(c.served?0:10))); }
+function plateWord(c){ return sideWord((c.dA+c.dB)/2); }
+function closePlate(who){
+  if(who.cook.served) return;
+  const sc=total(who.cook);
+  who.cook.served=true; who.cook.serveT=now;
+  who.plates.push({score:sc,word:plateWord(who.cook),dA:who.cook.dA,dB:who.cook.dB});
+}
+function sumPlates(plates){ return plates.reduce((s,p)=>s+p.score,0); }
+function plateLine(plates){ return plates.map((p,i)=>DISH[i].charAt(0)+p.word).join('　'); }
 
-// ---------- UI ----------
 function paint(prefix,c){
   let hot=false;
   for(const s of ['A','B']){
@@ -380,35 +551,149 @@ function paint(prefix,c){
     const f=$(prefix+s); f.style.width=Math.min(d,120)/120*100+'%';
     f.style.background='#'+dColor(d,tmpC).getHexString();
     const down=(s==='A')===c.flipped;
-    $(prefix+s+'l').textContent=(down&&!c.served?'🔥 ':'')+s+'面';
-    $(prefix+s+'v').textContent=Math.round(d);
+    $(prefix+s+'l').textContent=(down&&!c.served?'● ':'')+s+'面';
   }
   $(prefix+'Card').classList.toggle('hot',hot);
 }
+function setDishLabel(){ $('timer').querySelector('small').textContent=DISH[Math.min(player.plates.length,PLATES-1)]; }
 function setButtons(){
   const on=state==='play'&&!player.cook.served;
   $('fan').disabled=$('flip').disabled=$('serve').disabled=!on;
 }
+function beginDish(){
+  player.cook=newCook(); cpu.cook=newCook(); resetCpu();
+  timeLeft=ROUND; endTimer=0; holding=false; $('fan').classList.remove('on');
+  stopWind(); scheduleWind();
+  setDishLabel(); setButtons();
+}
 
 function start(){
   initAudio(); if(actx&&actx.state==='suspended')actx.resume();
-  player.cook=newCook(); cpu.cook=newCook(); resetCpu();
-  timeLeft=ROUND; endTimer=0; state='play';
-  $('title').hidden=true; $('result').hidden=true; setButtons();
+  clearEnding();
+  clearTimeout(judgementTimer); $('judgement').hidden=true;
+  player.plates=[]; cpu.plates=[];
+  state='play';
+  $('title').hidden=true; $('ending').hidden=true;
+  $('hud').hidden=false; $('pad').hidden=false;
+  $('againBtn').hidden=true; $('endFinal').hidden=true;
+  beginDish(); say(weatherLine());
 }
 function finish(){
-  state='result'; setButtons(); holding=false; $('fan').classList.remove('on');
-  const p=player.cook,c=cpu.cook, ps=total(p), cs=total(c);
-  $('rP').textContent=ps; $('rC').textContent=cs;
-  $('rPd').textContent=`A:${sideWord(p.dA)} / B:${sideWord(p.dB)}${p.served?'':'（時間切れ）'}`;
-  $('rCd').textContent=`A:${sideWord(c.dA)} / B:${sideWord(c.dB)}${c.served?'':'（時間切れ）'}`;
-  $('verdict').textContent=ps>cs?'あなたの勝ち！':ps<cs?'ゲンの勝ち…':'引き分け';
-  const g=ps>=95?'板前が弟子入りを頼みに来るレベル。':ps>=80?'居酒屋の看板メニューになれる焼き加減。':ps>=60?'白ごはんが進む、家庭の味。':
-    (p.dA>100||p.dB>100)?'炭のうま味が強すぎた。うちわは控えめに。':'まだ海に帰れそう。もう少し火を入れて。';
-  $('rComment').textContent=g;
+  state='judgement'; setButtons(); holding=false; $('fan').classList.remove('on'); stopWind();
+  $('hud').hidden=true; $('pad').hidden=true;
+  const ps=sumPlates(player.plates), cs=sumPlates(cpu.plates);
   const best=Math.max(ps, parseInt(lsGet(LS.best,'0'),10)||0);
-  lsSet(LS.best,best); $('rBest').textContent=best;
-  setTimeout(()=>{$('result').hidden=false;},900);
+  lsSet(LS.best,best);
+  showJudgement(ps,cs);
+}
+function advanceOrFinish(){
+  if(player.plates.length>=PLATES && cpu.plates.length>=PLATES){ finish(); return; }
+  beginDish();
+  say(DISH[player.plates.length]+'、いくぞ');
+}
+
+const GUESTS=[
+  {name:'女優', lines:{生:'まだ泳いでいらっしゃる。下げて。',ちょい生:'生焼けですの。私に出すお魚？',ベスト:'……悪くないわ。撮影所の弁当よりまし。',焼き強め:'香りが強いわね。セットのスモークみたい。',焦げ:'焦げてる。新聞種にされたくないの。'}},
+  {name:'常連', lines:{生:'これは刺身か。秋刀魚は焼くもんじゃ。',ちょい生:'腹がまだ白い。火が足りん。',ベスト:'皮はパリッ、中はとろり。塩も文句なし。',焼き強め:'脂が飛んだ。もったいない。',焦げ:'炭を食わす気か。舌が残らん。'}},
+  {name:'小僧', lines:{生:'動いた！ ……動いてないか。',ちょい生:'中が冷たい。まだ早えよ。',ベスト:'うめぇ！ 頭までいける！',焼き強め:'皮がカタい。でも食う。',焦げ:'から！ 水、水！'}}
+];
+let endingStep=0, endingTimers=[], endingPs=0, endingCs=0, judgementTimer=0;
+function clearEnding(){ endingTimers.forEach(clearTimeout); endingTimers=[]; endingStep=0; }
+function later(ms,fn){ endingTimers.push(setTimeout(fn,ms)); }
+function hexDoneness(d){ return '#'+dColor(d,tmpC).getHexString(); }
+function paintPlates(plates){
+  const wrap=$('endPlates');
+  while(wrap.firstChild) wrap.removeChild(wrap.firstChild);
+  const NS='http://www.w3.org/2000/svg';
+  const make=(tag,attrs={})=>{ const el=document.createElementNS(NS,tag); for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v); return el; };
+  for(let i=0;i<PLATES;i++){
+    const p=plates[i]||{dA:0,dB:0};
+    const dish=document.createElement('div'); dish.className='dish';
+    const svg=make('svg',{viewBox:'0 0 140 48',class:'sanma','aria-hidden':'true'});
+    const grad=make('linearGradient',{id:'fishGrad'+i,x1:'0',y1:'0',x2:'0',y2:'1'});
+    grad.appendChild(make('stop',{offset:'0%','stop-color':hexDoneness(p.dA||0)}));
+    grad.appendChild(make('stop',{offset:'52%','stop-color':hexDoneness(((p.dA||0)+(p.dB||0))/2)}));
+    grad.appendChild(make('stop',{offset:'100%','stop-color':hexDoneness(p.dB||0)}));
+    const defs=make('defs'); defs.appendChild(grad); svg.appendChild(defs);
+    svg.appendChild(make('path',{d:'M22 24 5 10 9 24 5 38Z',fill:hexDoneness(((p.dA||0)+(p.dB||0))/2),stroke:'#3a281c','stroke-width':'1.2'}));
+    svg.appendChild(make('path',{d:'M18 24C35 7 91 6 126 19L136 24 126 29C91 42 35 41 18 24Z',fill:'url(#fishGrad'+i+')',stroke:'#3a281c','stroke-width':'1.5'}));
+    svg.appendChild(make('path',{d:'M108 15Q126 18 136 24 126 30 108 33Q119 24 108 15Z',fill:'rgba(25,20,15,.2)'}));
+    svg.appendChild(make('path',{d:'M28 23Q63 14 108 20M29 29Q67 37 111 28',fill:'none',stroke:'rgba(245,224,184,.34)','stroke-width':'1.3'}));
+    const avg=((p.dA||0)+(p.dB||0))/2;
+    const marks=Math.max(0,Math.min(5,Math.floor((avg-55)/10)));
+    for(let m=0;m<marks;m++) svg.appendChild(make('path',{d:`M${48+m*12} 13l-8 21`,stroke:avg>102?'#160c08':'#5b321c','stroke-width':avg>102?'3.2':'2','stroke-linecap':'round',opacity:'.7'}));
+    svg.appendChild(make('circle',{cx:'122',cy:'21',r:'3.5',fill:'#e8dfcc',stroke:'#2a1810','stroke-width':'1'}));
+    svg.appendChild(make('circle',{cx:'123',cy:'21',r:'1.6',fill:'#111'}));
+    svg.appendChild(make('path',{d:'M133 25q-5 3-10 0',fill:'none',stroke:'#2a1810','stroke-width':'1'}));
+    dish.appendChild(svg); wrap.appendChild(dish);
+  }
+}
+function endingLine(who,text){
+  $('endWho').textContent=who; $('endLine').textContent=text;
+}
+function guestEat(i){
+  const g=$('g'+i);
+  g.classList.add('on','eat');
+  later(450,()=>g.classList.remove('eat'));
+  const dish=$('endPlates').children[i]; if(dish) dish.classList.add('eaten');
+  const plate=player.plates[i]||{word:'生'};
+  const guest=GUESTS[i];
+  endingLine(guest.name, guest.lines[plate.word]||guest.lines['ちょい生']);
+  if(navigator.vibrate) navigator.vibrate(12);
+}
+function endingFinale(){
+  const nBest=player.plates.filter(p=>p.word==='ベスト').length;
+  const nBad=player.plates.filter(p=>p.word==='生'||p.word==='焦げ').length;
+  let text=nBest===3?'三人とも、黙って箸が進んだ。':nBest>=2?'二人は満足。一人は不服。':nBad>=2?'三人とも、皿を置いた。':'味は分かれた。明日の火だ。';
+  if(endingPs>endingCs) text+=' ゲン「客の顔がいい」';
+  else if(endingPs<endingCs) text+=' ゲン「うちの勝ちだな」';
+  else text+=' ゲン「互角だ」';
+  $('endFinal').textContent=text; $('endFinal').hidden=false;
+  $('againBtn').hidden=false;
+}
+function playEndingBeat(){
+  if(endingStep<PLATES){
+    guestEat(endingStep);
+    endingStep++;
+    later(2200, playEndingBeat);
+    return;
+  }
+  later(800, endingFinale);
+}
+function startEnding(ps,cs){
+  clearEnding();
+  endingPs=ps; endingCs=cs; endingStep=0;
+  for(let i=0;i<PLATES;i++) $('g'+i).classList.remove('on','eat');
+  $('endWho').textContent=''; $('endLine').textContent='三皿、お待ち。';
+  $('endFinal').hidden=true; $('endFinal').textContent='';
+  $('againBtn').hidden=true;
+  paintPlates(player.plates);
+  $('ending').hidden=false;
+  later(600, playEndingBeat);
+}
+function showJudgement(ps,cs){
+  clearTimeout(judgementTimer);
+  endingPs=ps; endingCs=cs;
+  $('judgeWinner').textContent=ps>cs?'あなたの勝利！':ps<cs?'焼き場のゲンの勝利！':'両者引き分け！';
+  $('judgement').hidden=false;
+  judgementTimer=setTimeout(skipJudgement,2600);
+}
+function skipJudgement(){
+  if(state!=='judgement') return;
+  clearTimeout(judgementTimer); $('judgement').hidden=true;
+  state='ending'; startEnding(endingPs,endingCs);
+}
+function endingNext(){
+  if(!$('againBtn').hidden) return;
+  endingTimers.forEach(clearTimeout); endingTimers=[];
+  for(let i=0;i<PLATES;i++){
+    $('g'+i).classList.add('on');
+    const dish=$('endPlates').children[i]; if(dish) dish.classList.add('eaten');
+  }
+  const last=player.plates[PLATES-1];
+  if(last) endingLine(GUESTS[2].name, GUESTS[2].lines[last.word]||GUESTS[2].lines['ちょい生']);
+  endingStep=PLATES;
+  endingFinale();
 }
 
 // ---------- コントロールパネル ----------
@@ -431,8 +716,12 @@ function resumeGame(){
 }
 function quitToTitle(){
   const d=$('pauseDlg'); if(d.open) d.close();
-  state='title'; holding=false; $('fan').classList.remove('on');
-  timeLeft=ROUND; $('result').hidden=true; $('title').hidden=false; setButtons();
+  state='title'; holding=false; $('fan').classList.remove('on'); stopWind();
+  player.plates=[]; cpu.plates=[]; player.cook=newCook(); cpu.cook=newCook();
+  timeLeft=ROUND; setDishLabel();
+  clearEnding();
+  $('ending').hidden=true; $('hud').hidden=false; $('pad').hidden=false;
+  $('title').hidden=false; setButtons();
 }
 $('btnMute').addEventListener('click',()=>setMute(!muted));
 $('btnMuteDlg').addEventListener('click',()=>setMute(!muted));
@@ -444,20 +733,45 @@ document.addEventListener('visibilitychange',()=>{ if(document.hidden) pauseGame
 setMute(muted);
 
 // input
+let lastTouchEnd=0;
+document.addEventListener('touchend',e=>{ const t=Date.now(); if(t-lastTouchEnd<=300) e.preventDefault(); lastTouchEnd=t; },{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault());
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('touchmove',e=>{ if(e.target.closest('[data-scrollable]')) return; e.preventDefault(); },{passive:false});
+function tap(el,handler){
+  const fire=e=>{ if(el.disabled) return; e.preventDefault(); el.classList.add('is-pressed'); if(navigator.vibrate) navigator.vibrate(14); handler(e); };
+  const rel=()=>el.classList.remove('is-pressed');
+  el.addEventListener('pointerdown',fire);
+  el.addEventListener('pointerup',rel);
+  el.addEventListener('pointercancel',rel);
+  el.addEventListener('pointerleave',rel);
+}
 const fanBtn=$('fan');
-fanBtn.addEventListener('pointerdown',e=>{ if(fanBtn.disabled)return; e.preventDefault(); try{fanBtn.setPointerCapture(e.pointerId);}catch(_){} holding=true; fanBtn.classList.add('on'); player.cook.boost=Math.min(MAXBOOST,player.cook.boost+.25); });
+fanBtn.addEventListener('pointerdown',e=>{ if(fanBtn.disabled)return; e.preventDefault(); try{fanBtn.setPointerCapture(e.pointerId);}catch(_){} holding=true; fanBtn.classList.add('on'); if(navigator.vibrate) navigator.vibrate(12); player.cook.heat=Math.min(HEAT_MAX,player.cook.heat+.04); flapNow(); });
 ['pointerup','pointerleave','pointercancel'].forEach(ev=>fanBtn.addEventListener(ev,()=>{holding=false;fanBtn.classList.remove('on');}));
-$('flip').addEventListener('click',()=>{ if(state==='play')doFlip(player.cook); });
-$('serve').addEventListener('click',()=>{ if(state==='play'&&!player.cook.served){ player.cook.served=true; player.cook.serveT=now; setButtons(); if(!cpu.cook.served)say('お、早いな。どれどれ…'); }});
-$('startBtn').addEventListener('click',start);
-$('againBtn').addEventListener('click',start);
+tap($('flip'),()=>{ if(state==='play') doFlip(player.cook); });
+tap($('serve'),()=>{ if(state==='play'&&!player.cook.served){ closePlate(player); setButtons(); if(!cpu.cook.served) say('お、早いな。どれどれ…'); }});
+tap($('startBtn'),start);
+tap($('againBtn'),start);
+$('ending').addEventListener('pointerdown',e=>{
+  if(e.target.closest('#againBtn')) return;
+  if(state==='ending') endingNext();
+});
+$('judgement').addEventListener('pointerdown',skipJudgement);
 addEventListener('keydown',e=>{
   if(e.key==='Escape'||e.key==='p'||e.key==='P'){ e.preventDefault(); state==='paused'?resumeGame():pauseGame(); return; }
   if(state==='paused') return;
+  if(state==='judgement'){ e.preventDefault(); skipJudgement(); return; }
+  if(state==='ending'){
+    e.preventDefault();
+    if(!$('againBtn').hidden){ if(e.key==='Enter') start(); }
+    else endingNext();
+    return;
+  }
   if(state!=='play'){ if(e.key==='Enter'){ e.preventDefault(); start(); } return; }
-  if(e.code==='Space'){ e.preventDefault(); if(!player.cook.served){holding=true;fanBtn.classList.add('on');} }
-  if(e.key==='f'||e.key==='F') $('flip').click();
-  if(e.key==='Enter') $('serve').click();
+  if(e.code==='Space'){ e.preventDefault(); if(!player.cook.served && !e.repeat){ holding=true; fanBtn.classList.add('on'); flapNow(); } }
+  if(e.key==='f'||e.key==='F') doFlip(player.cook);
+  if(e.key==='Enter'&&!player.cook.served){ closePlate(player); setButtons(); }
 });
 addEventListener('keyup',e=>{ if(e.code==='Space'){holding=false;fanBtn.classList.remove('on');} });
 
@@ -488,15 +802,27 @@ function frame(){
 
   if(state==='play'){
     timeLeft-=dt;
-    if(holding&&!player.cook.served) player.cook.boost=Math.min(MAXBOOST,player.cook.boost+2.6*dt);
-    cookStep(player.cook,dt); cookStep(cpu.cook,dt); cpuThink(dt);
-    if(timeLeft<=0){ timeLeft=0; finish(); }
-    else if(player.cook.served&&cpu.cook.served){ endTimer+=dt; if(endTimer>.8)finish(); }
+    updateWind();
+    cookStep(player.cook,dt,holding&&!player.cook.served);
+    cookStep(cpu.cook,dt,cpu.fanning&&!cpu.cook.served);
+    cpuThink(dt);
+    flapBusy=Math.max(0,flapBusy-dt*1.6);
+    if(holding&&!player.cook.served){
+      flapPhase+=dt*(3.4+player.cook.heat*5.5+flapBusy*9);
+      while(flapPhase>=1){ flapPhase--; flapNow(); }
+    }else flapPhase=0;
+    if(timeLeft<=0){
+      timeLeft=0;
+      closePlate(player); closePlate(cpu);
+      advanceOrFinish();
+    }else if(player.cook.served&&cpu.cook.served){
+      endTimer+=dt; if(endTimer>.8) advanceOrFinish();
+    }
   }
   $('timer').firstChild.nodeValue=Math.ceil(timeLeft);
 
   cooks().forEach((c,i)=>{
-    const st=stoves[i], f=fishes[i], heat=c.boost/MAXBOOST;
+    const st=stoves[i], f=fishes[i], heat=c.heat;
     const flick=Math.sin(now*9+i*2)*.08+Math.sin(now*23+i)*.05;
     st.coalMats[0].emissiveIntensity=.65+heat*1.1+flick;
     st.coalMats[1].emissiveIntensity=.55+heat*1.0-flick;
@@ -522,7 +848,7 @@ function frame(){
     f.eyeA.color.set(0x111111).lerp(tmpC.set(0xeeeae0),Math.min(1,Math.max(0,(c.dA-35)/35)));
     f.eyeB.color.set(0x111111).lerp(tmpC.set(0xeeeae0),Math.min(1,Math.max(0,(c.dB-35)/35)));
 
-    if(state==='play'||state==='result'){
+    if(state==='play'||state==='ending'){
       const maxD=Math.max(c.dA,c.dB);
       const rate=(c.served?.4:1)*(.4+maxD/35)*(.7+heat*1.2);
       if(Math.random()<rate*dt*3){
@@ -537,12 +863,12 @@ function frame(){
 
   updateParts(dt);
 
-  if(state==='play'||state==='result'){ paint('p',player.cook); paint('c',cpu.cook); }
+  if(state==='play'){ paint('p',player.cook); paint('c',cpu.cook); }
 
   if(sizGain&&actx){
     const p=player.cook;
     let g=0;
-    if(state==='play'){ g=(p.served?.008:.025+.05*(p.boost/MAXBOOST))+(cpu.cook.served?0:.012); }
+    if(state==='play'){ g=(p.served?.008:.025+.05*p.heat)+(cpu.cook.served?0:.012); }
     g+=sizzleKick; sizzleKick=Math.max(0,sizzleKick-dt*.4);
     if(muted) g=0;
     sizGain.gain.setTargetAtTime(g,actx.currentTime,.05);
@@ -555,6 +881,16 @@ function frame(){
   renderer.render(scene,camera);
 }
 frame();
+if(location.hash==='#ending'){
+  player.plates=[
+    {score:95,word:'ベスト',dA:82,dB:78},
+    {score:58,word:'ちょい生',dA:64,dB:60},
+    {score:18,word:'焦げ',dA:112,dB:104}
+  ];
+  cpu.plates=[{score:80,word:'ベスト',dA:80,dB:80},{score:80,word:'ベスト',dA:80,dB:80},{score:80,word:'ベスト',dA:80,dB:80}];
+  $('title').hidden=true;
+  finish();
+}
 </script>
 </body>
 </html>
